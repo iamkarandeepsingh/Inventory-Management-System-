@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-store, max-age=0" />
+  <title>Governed Inventory AI</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a2332;
+      --border: #2d3a4d;
+      --text: #e7edf5;
+      --muted: #8b9cb3;
+      --accent: #3d8bfd;
+      --user-bg: #243652;
+      --agent-bg: #1e2a1e;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --gray: #94a3b8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      padding: 0.6rem 1rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    header h1 { font-size: 1rem; font-weight: 600; margin: 0; }
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(320px, 1fr) minmax(380px, 1.2fr);
+      flex: 1;
+      min-height: 0;
+    }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+    .panel {
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .panel:last-child { border-right: none; }
+    .panel-header {
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .bubble {
+      max-width: 92%;
+      padding: 0.65rem 0.85rem;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      line-height: 1.45;
+      white-space: pre-wrap;
+    }
+    .bubble.user {
+      align-self: flex-end;
+      background: var(--user-bg);
+      border: 1px solid var(--border);
+    }
+    .bubble.agent {
+      align-self: flex-start;
+      background: var(--agent-bg);
+      border: 1px solid #2d4a2d;
+    }
+    .controls {
+      padding: 0.75rem 1rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    label { font-size: 0.75rem; color: var(--muted); }
+    select, input[type="text"] {
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.4rem 0.6rem;
+      font-size: 0.85rem;
+    }
+    input[type="text"] { flex: 1; min-width: 160px; }
+    button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 0.45rem 1rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    button.secondary {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .status-bar {
+      font-size: 0.72rem;
+      color: var(--muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    .status-bar span.ok { color: #4ade80; }
+    .right-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+    }
+    .card h2 {
+      margin: 0 0 0.5rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .card p, .card li { margin: 0.35rem 0; font-size: 0.88rem; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 0.4rem 0.35rem;
+      border-bottom: 1px solid var(--border);
+    }
+    th { color: var(--muted); font-weight: 600; }
+    .act-ESCALATE { color: var(--red); font-weight: 600; }
+    .act-MONITOR { color: var(--yellow); font-weight: 600; }
+    .act-INVESTIGATE { color: var(--gray); }
+    .export-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+    .explain-pre {
+      font-size: 0.72rem;
+      background: #0d1117;
+      padding: 0.75rem;
+      border-radius: 6px;
+      overflow-x: auto;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+    .empty-state { color: var(--muted); font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Governed Inventory Analytics Agent</h1>
+    <div class="status-bar" id="statusBar">
+      <span id="stIdle">IDLE</span>
+      <span id="stWorkflow">Workflow: —</span>
+      <span id="stAudit" class="ok">Audit: ON</span>
+      <span id="stDb">DB: checking…</span>
+    </div>
+  </header>
+  <div class="layout">
+    <section class="panel">
+      <div class="panel-header">Conversation</div>
+      <div class="messages" id="messages"></div>
+      <div class="controls">
+        <div class="row">
+          <div>
+            <label for="scope">Scope</label><br />
+            <select id="scope">
+              <option value="all">All locations</option>
+              <option value="DC-004">DC-004</option>
+              <option value="DC-006">DC-006</option>
+              <option value="Store-001">Store-001</option>
+              <option value="Store-002">Store-002</option>
+              <option value="Store-003">Store-003</option>
+              <option value="Store-005">Store-005</option>
+            </select>
+          </div>
+          <div>
+            <label for="demandWindow">Demand window</label><br />
+            <select id="demandWindow">
+              <option value="7">7 days demand</option>
+              <option value="14">14 days demand</option>
+              <option value="30" selected>30 days demand</option>
+              <option value="60">60 days demand</option>
+              <option value="90">90 days demand</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <input type="text" id="msgInput" placeholder="Type your inventory question…" />
+          <button type="button" id="sendBtn">Send</button>
+        </div>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-header">Inventory insights</div>
+      <div class="right-scroll" id="rightPanel">
+        <p class="empty-state">Ask a question on the left to see detailed findings, KPIs, and recommendations.</p>
+      </div>
+    </section>
+  </div>
+  <script>
+    const sessionId = "sess-" + Math.random().toString(36).slice(2, 12);
+    const messagesEl = document.getElementById("messages");
+    const rightPanel = document.getElementById("rightPanel");
+    const msgInput = document.getElementById("msgInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const scopeEl = document.getElementById("scope");
+    const demandEl = document.getElementById("demandWindow");
+    const stWorkflow = document.getElementById("stWorkflow");
+    const stDb = document.getElementById("stDb");
+    const stIdle = document.getElementById("stIdle");
+
+    /** Avoid literal "undefined" in bubbles (textContent coerces undefined → "undefined"). */
+    function addBubble(text, who) {
+      let s;
+      if (text === null || text === undefined) {
+        s = who === "agent" ? "No message returned from the server." : "";
+      } else {
+        s = String(text).trim();
+        if (
+          (s === "" || s === "undefined" || s === "null") &&
+          who === "agent"
+        ) {
+          s =
+            "No usable assistant message (try a hard refresh: Ctrl+F5). Check Network → /api/chat for JSON.";
+        }
+      }
+      const d = document.createElement("div");
+      d.className = "bubble " + who;
+      d.textContent = s;
+      messagesEl.appendChild(d);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function pickAgentMessage(data) {
+      if (!data || typeof data !== "object") return "Invalid response from server.";
+      const direct =
+        data.narrative ??
+        data.user_message ??
+        data.message ??
+        data.reply ??
+        data.assistant_message;
+      const t = direct != null ? String(direct).trim() : "";
+      if (t !== "" && t !== "undefined" && t !== "null") return t;
+      if (data.detail != null) {
+        if (typeof data.detail === "string") return data.detail;
+        if (Array.isArray(data.detail)) {
+          return data.detail
+            .map((x) => (x && (x.msg || x.message)) || JSON.stringify(x))
+            .join(" ");
+        }
+      }
+      if (data.status === "out_of_scope" && data.supported_workflows)
+        return String(data.supported_workflows);
+      return "No response. Check the network tab for /api/chat.";
+    }
+
+    async function refreshHealth() {
+      try {
+        const r = await fetch("/api/health");
+        const j = await r.json();
+        const ok = j.db === "connected";
+        stDb.textContent = ok ? "DB: CONNECTED" : "DB: " + (j.db || "error");
+        stDb.className = ok ? "ok" : "";
+      } catch {
+        stDb.textContent = "DB: error";
+      }
+    }
+    refreshHealth();
+    setInterval(refreshHealth, 30000);
+
+    addBubble(
+      "Hello! I am your Inventory Analytics Assistant. I can help you analyze stockouts, overstock, backorders, and other inventory issues. What would you like to explore today?",
+      "agent"
+    );
+
+    let explainOpen = false;
+    let lastExplain = null;
+
+    const esc = (s) => {
+        if (s === null || s === undefined) return "";
+        return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+      };
+
+    function renderRight(data) {
+      const fe = data.frontend;
+
+      if (!fe && data.status !== "ok") {
+        if (stIdle) stIdle.textContent = "IDLE";
+        stWorkflow.textContent =
+          "Workflow: " + (data.routing?.workflow_id || data.reason || "—");
+        rightPanel.innerHTML = "";
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML =
+          "<h2>Status</h2><p>" + esc(pickAgentMessage(data)) + "</p>";
+        if (data.supported_workflows) {
+          card.innerHTML +=
+            "<p style='font-size:0.8rem;color:var(--muted)'>" +
+            esc(data.supported_workflows) +
+            "</p>";
+        }
+        rightPanel.appendChild(card);
+        return;
+      }
+      if (!fe) {
+        if (stIdle) stIdle.textContent = "IDLE";
+        stWorkflow.textContent = "Workflow: " + (data.routing?.workflow_id || "—");
+        rightPanel.innerHTML =
+          "<p class='empty-state'>" + esc(pickAgentMessage(data)) + "</p>";
+        return;
+      }
+
+      const wf = fe.workflow_id || data.routing?.workflow_id || "—";
+      stWorkflow.textContent = "Workflow: " + wf;
+      if (stIdle)
+        stIdle.textContent =
+          data.status === "ok" && fe.findings_table?.length ? "READY" : "IDLE";
+
+      let html = "";
+      html += '<div class="card"><h2>Summary</h2><p>' + esc(fe.summary) + "</p></div>";
+
+      html += '<div class="card"><h2>Findings table</h2>';
+      if (fe.findings_table && fe.findings_table.length) {
+        html += "<table><thead><tr><th>Rank</th><th>SKU</th><th>Location</th><th>Key KPI</th><th>Severity</th><th>Action</th></tr></thead><tbody>";
+        fe.findings_table.forEach((row) => {
+          const ac = row.recommended_action || "";
+          html += "<tr><td>" + esc(row.rank) + "</td><td>" + esc(row.sku) + "</td><td>" + esc(row.location);
+          html += "</td><td>" + esc(row.key_kpi) + "</td><td>" + esc(row.severity_score);
+          html += "</td><td class='act-" + esc(ac) + "'>" + esc(ac) + "</td></tr>";
+        });
+        html += "</tbody></table>";
+      } else {
+        html += "<p class='empty-state'>No rows (see summary).</p>";
+      }
+      html += "</div>";
+
+      html += '<div class="card"><h2>KPIs used</h2><p>' + esc(fe.kpis_used?.formula || "") + "</p>";
+      html += "<p><strong>Version:</strong> " + esc(fe.kpis_used?.version) + "</p></div>";
+
+      html += '<div class="card"><h2>Recommendations</h2><ol>';
+      (fe.recommendations || []).forEach((r) => {
+        html += "<li>" + esc(r) + "</li>";
+      });
+      html += "</ol></div>";
+
+      html += '<div class="card"><h2>Evidence</h2>';
+      html += "<p>query_id: " + esc(fe.evidence?.query_id) + "</p>";
+      html += "<p>run_id: " + esc(fe.evidence?.run_id) + "</p>";
+      html += "<p>snapshot_date: " + esc(fe.evidence?.snapshot_date) + "</p>";
+      html += "<p>records_used: " + esc(fe.evidence?.records_used) + "</p>";
+      html += "<p>tool_versions: " + esc(JSON.stringify(fe.evidence?.tool_versions || {})) + "</p></div>";
+
+      html += '<div class="card"><button type="button" class="secondary" id="explainBtn">Explain (rules / thresholds)</button>';
+      html += '<div id="explainBox" style="display:none;margin-top:0.75rem"><pre class="explain-pre"></pre></div></div>';
+
+      html += '<div class="card"><h2>Export</h2><div class="export-row">';
+      html += '<a href="/api/export/csv?session_id=' + encodeURIComponent(sessionId) + '" download><button type="button" class="secondary">Download CSV</button></a>';
+      html += '<a href="/api/export/json?session_id=' + encodeURIComponent(sessionId) + '" download><button type="button" class="secondary">Download JSON</button></a>';
+      html += "</div></div>";
+
+      rightPanel.innerHTML = html;
+      lastExplain = data.explain;
+
+      document.getElementById("explainBtn").onclick = () => {
+        explainOpen = !explainOpen;
+        const box = document.getElementById("explainBox");
+        const pre = box.querySelector("pre");
+        box.style.display = explainOpen ? "block" : "none";
+        pre.textContent = JSON.stringify(lastExplain, null, 2);
+      };
+    }
+
+    async function send() {
+      const message = msgInput.value.trim();
+      if (!message) return;
+      sendBtn.disabled = true;
+      addBubble(message, "user");
+      msgInput.value = "";
+      try {
+        const dwd = parseInt(demandEl.value, 10);
+        const r = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message,
+            scope: scopeEl.value,
+            demand_window_days: Number.isFinite(dwd) ? dwd : 30,
+            session_id: sessionId,
+          }),
+        });
+        let data;
+        try {
+          data = await r.json();
+        } catch {
+          addBubble("Server returned non-JSON (status " + r.status + ").", "agent");
+          sendBtn.disabled = false;
+          return;
+        }
+        const picked = pickAgentMessage(data);
+        addBubble(picked, "agent");
+        renderRight(data);
+      } catch (e) {
+        addBubble("Network error: " + e, "agent");
+      }
+      sendBtn.disabled = false;
+    }
+
+    sendBtn.onclick = send;
+    msgInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") send();
+    });
+  </script>
+</body>
+</html>

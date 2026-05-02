@@ -1,0 +1,12 @@
+google-generativeai
+duckdb
+fastapi
+uvicorn[standard]
+python-dotenv
+pandas
+openpyxl
+pytest
+httpx
+python-jose[cryptography]
+bcrypt>=4.0.0
+# VIBE_PROMPT — not a PyPI package; project prompt lives in agents/agent1_router.py

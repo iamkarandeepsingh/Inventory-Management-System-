@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+.venv/
+.env
+import os.py
+data/*.duckdb
+data/all_tables_combined.xlsx
+.pytest_cache/
+frontend/node_modules/
+static/app/
