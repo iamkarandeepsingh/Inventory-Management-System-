@@ -4,6 +4,10 @@ An AI-assisted inventory management dashboard for exploring supply-chain data, a
 
 The project combines a FastAPI backend, DuckDB analytics database, Gemini-powered agent orchestration, and a React/Vite frontend.
 
+## Built Through Vibe Coding
+
+This project was built through vibe coding using Cursor, with an iterative AI-assisted workflow for designing the backend agents, shaping the governed analytics experience, and refining the React interface.
+
 ## Features
 
 - Natural-language inventory analysis through a governed AI agent flow
@@ -21,6 +25,32 @@ The project combines a FastAPI backend, DuckDB analytics database, Gemini-powere
 - Auth: JWT, bcrypt
 - Frontend: React, TypeScript, Vite, Tailwind CSS, Chart.js
 - Testing: Pytest, HTTPX
+
+## Screenshots
+
+### Login
+
+![Login screen](docs/screenshots/login.png)
+
+### Chat Workspace
+
+![Chat workspace](docs/screenshots/chat-workspace.png)
+
+### Stockout Dashboard
+
+![Stockout dashboard](docs/screenshots/stockout-dashboard.png)
+
+### Explain JSON
+
+![Explain JSON view](docs/screenshots/explain-json.png)
+
+### Export Session
+
+![Export session](docs/screenshots/export-session.png)
+
+### Dark Mode Findings
+
+![Dark mode findings table](docs/screenshots/dark-findings.png)
 
 ## Project Structure
 
