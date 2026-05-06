@@ -28,10 +28,6 @@ This project was built through vibe coding using Cursor, with an iterative AI-as
 
 ## Screenshots
 
-### Login
-
-![Login screen](docs/screenshots/login.png)
-
 ### Chat Workspace
 
 ![Chat workspace](docs/screenshots/chat-workspace.png)
