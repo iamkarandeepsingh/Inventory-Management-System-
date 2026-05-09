@@ -4,9 +4,6 @@ An AI-assisted inventory management dashboard for exploring supply-chain data, a
 
 The project combines a FastAPI backend, DuckDB analytics database, Gemini-powered agent orchestration, and a React/Vite frontend.
 
-## Built Through Vibe Coding
-
-This project was built through vibe coding using Cursor, with an iterative AI-assisted workflow for designing the backend agents, shaping the governed analytics experience, and refining the React interface.
 
 ## Features
 
